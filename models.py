@@ -24,3 +24,12 @@ class JobConfig(Base):
     provider = Column(String, nullable=False)
     status = Column(String, default="accepted")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class ProcessedPrice(Base):
+    __tablename__     = "processed_prices"
+    id                = Column(Integer, primary_key=True, index=True)
+    symbol            = Column(String, index=True)
+    price             = Column(Float)
+    timestamp         = Column(DateTime(timezone=True), server_default=func.now())
+    source            = Column(String)
+    raw_response_id   = Column(Integer)
