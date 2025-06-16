@@ -2,8 +2,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import yfinance as yf
 
-from db import engine, Base
-import models  # this imports & registers your ORM models
+from db   import engine, Base, SessionLocal
+import models
+from models import RawPrice
 
 # Create the tables
 Base.metadata.create_all(bind=engine)
@@ -26,4 +27,13 @@ async def get_latest_price(symbol: str):
     if data.empty:
         raise HTTPException(status_code=404, detail=f"Symbol '{symbol}' not found")
     latest_price = data["Close"].iloc[-1]
+
+    db = SessionLocal()#open a database session
+    try:
+         raw = RawPrice(symbol=symbol.upper(), price=float(latest_price))
+         db.add(raw)#stage the new row
+         db.commit()#write it to disk
+    finally:
+         db.close()
+
     return PriceResponse(symbol=symbol.upper(), price=round(float(latest_price), 2))
