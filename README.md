@@ -157,25 +157,25 @@ docker compose exec kafka \
 
 ```mermaid
 flowchart LR
-  subgraph API  
-    A[FastAPI<br/>(GET/POST)]  
+  subgraph API
+    A[FastAPI\n(GET/POST)]
   end
-  subgraph DB  
-    B[SQLite<br/>raw_prices]  
-    F[SQLite<br/>moving_averages]  
-    G[SQLite<br/>processed_prices]  
-    H[SQLite<br/>job_configs]  
+  subgraph DB
+    B[SQLite\nraw_prices]
+    F[SQLite\nmoving_averages]
+    G[SQLite\nprocessed_prices]
+    H[SQLite\njob_configs]
   end
-  subgraph Kafka Cluster  
-    C[Producer]  
-    D[price-events Topic]  
-    E[Consumer]  
+  subgraph KafkaCluster
+    C[Producer]
+    D[price-events Topic]
+    E[Consumer]
   end
 
-  A -->|writes raw→DB| B  
-  A -->|publishes→C| C  
-  C -->|to topic| D  
-  D -->|consumes→E| E  
-  E -->|upserts MA→F| F  
-  E -->|logs processed→G| G  
-  A -->|accepts poll→H| H  
+  A -->|writes raw→DB| B
+  A -->|publishes→Producer| C
+  C -->|to topic| D
+  D -->|consumes→Consumer| E
+  E -->|upserts MA→DB| F
+  E -->|logs processed→DB| G
+  A -->|accepts poll→DB| H
