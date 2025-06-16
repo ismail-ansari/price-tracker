@@ -1,6 +1,7 @@
 from kafka import KafkaProducer
 import json
 from datetime import datetime
+from typing import List, Dict
 
 #Kafka producer setup
 producer = KafkaProducer(
@@ -15,7 +16,7 @@ import yfinance as yf
 
 from db   import engine, Base, SessionLocal
 import models
-from models import RawPrice
+from models import JobConfig, RawPrice, MovingAverage
 
 # Create the tables
 Base.metadata.create_all(bind=engine)
@@ -26,18 +27,37 @@ app = FastAPI(
     version="0.1.0",
 )
 
-class PriceResponse(BaseModel):
-    symbol: str
-    price: float
+class PollRequest(BaseModel):
+    symbols: List[str]
+    interval: int
+    provider: str
 
-@app.get("/prices/latest", response_model=PriceResponse)
-async def get_latest_price(symbol: str):
-    """Fetch the latest market price for a given ticker symbol."""
-    ticker = yf.Ticker(symbol)
-    data = ticker.history(period="1d", interval="1m")
-    if data.empty:
-        raise HTTPException(status_code=404, detail=f"Symbol '{symbol}' not found")
-    latest_price = data["Close"].iloc[-1]
+class PollResponse(BaseModel):
+    job_id: str
+    status: str
+    config: Dict[str, object]
+
+@app.post("/prices/poll", status_code=202, response_model=PollResponse)
+async def poll_prices(req: PollRequest):
+    db = SessionLocal()
+    try:
+        job = JobConfig(
+            symbols=req.symbols,
+            interval=req.interval,
+            provider=req.provider,
+            status="accepted",
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        return PollResponse(
+            job_id=f"poll_{job.id}",
+            status=job.status,
+            config={"symbols": job.symbols, "interval": job.interval},
+        )
+    finally:
+        db.close()
+
 #db persistence block
     db = SessionLocal()#open a database session
     try:
@@ -59,4 +79,9 @@ async def get_latest_price(symbol: str):
          print(f"[Kafka publish error] {e}")
 
          
-    return PriceResponse(symbol=symbol.upper(), price=round(float(latest_price), 2))
+    return PriceResponse(
+        symbol=symbol.upper(),
+        price=round(float(latest_price), 2),
+        timestamp=ts,
+        provider=prov,
+     )

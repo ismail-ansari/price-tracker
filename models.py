@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, func
+from sqlalchemy import Column, Integer, String, Float, DateTime, func, JSON
 from db import Base
 
 class RawPrice(Base):
@@ -19,6 +19,8 @@ class MovingAverage(Base):
 class JobConfig(Base):
     __tablename__ = "job_configs"
     id = Column(Integer, primary_key=True, index=True)
-    symbol = Column(String, unique=True, index=True)
-    window_size = Column(Integer, default=5)
-    schedule = Column(String)  # e.g., cron or interval
+    symbols = Column(JSON, nullable=False)
+    interval = Column(Integer, nullable=False)
+    provider = Column(String, nullable=False)
+    status = Column(String, default="accepted")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
