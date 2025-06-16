@@ -2,7 +2,12 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import yfinance as yf
 
-# make sure this is literally `app`
+from db import engine, Base
+import models  # this imports & registers your ORM models
+
+# Create the tables
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
     title="Price Tracker",
     description="Fetch latest stock prices via Yahoo Finance",
